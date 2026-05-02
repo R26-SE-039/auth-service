@@ -1,0 +1,32 @@
+import express from 'express';
+import cors from 'cors';
+import { loadSettings } from './config/config';
+import { UserStore } from './storage/userStore';
+import { buildRouter } from './api/routes';
+
+async function startServer() {
+  const settings = loadSettings();
+  const store = new UserStore(settings.dbPath);
+  await store.init();
+
+  const app = express();
+
+  app.use(cors({
+    origin: settings.corsOrigins,
+    credentials: true,
+  }));
+
+  app.use(express.json());
+
+  app.use(buildRouter(store, settings.authSecret, settings.accessTokenTtlMinutes));
+
+  const port = process.env.PORT || 8000;
+  app.listen(port, () => {
+    console.log(`Authentication Service (Node.js) listening on port ${port}`);
+  });
+}
+
+startServer().catch(err => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});
