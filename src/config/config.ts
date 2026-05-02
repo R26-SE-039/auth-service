@@ -15,7 +15,8 @@ const DEFAULT_CORS = [
 export interface AuthSettings {
   authSecret: string;
   accessTokenTtlMinutes: number;
-  dbPath: string;
+  supabaseUrl: string;
+  supabaseKey: string;
   corsOrigins: string[];
 }
 
@@ -25,12 +26,11 @@ export function loadSettings(): AuthSettings {
     ? rawCors.split(",").map(item => item.trim()).filter(item => item !== "")
     : DEFAULT_CORS;
 
-  const dbPath = process.env.AUTH_DB_PATH || "data/auth/auth.db";
-
   return {
     authSecret: process.env.AUTH_SECRET || "dev-change-me-secret",
     accessTokenTtlMinutes: Math.max(5, parseInt(process.env.AUTH_ACCESS_TOKEN_TTL_MINUTES || "120", 10)),
-    dbPath: path.resolve(process.cwd(), dbPath),
+    supabaseUrl: process.env.SUPABASE_URL || "",
+    supabaseKey: process.env.SUPABASE_KEY || "",
     corsOrigins: corsOrigins,
   };
 }

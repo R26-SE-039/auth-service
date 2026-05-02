@@ -6,7 +6,7 @@ import { buildRouter } from './api/routes';
 
 async function startServer() {
   const settings = loadSettings();
-  const store = new UserStore(settings.dbPath);
+  const store = new UserStore(settings.supabaseUrl, settings.supabaseKey);
   await store.init();
 
   const app = express();

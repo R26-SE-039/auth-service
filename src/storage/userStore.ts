@@ -1,8 +1,5 @@
-import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuid4 } from 'uuid';
-import fs from 'fs';
-import path from 'path';
 
 export interface UserRecord {
   id: string;
@@ -24,54 +21,41 @@ export interface UserProfileRecord {
 }
 
 export class UserStore {
-  private db: Database | null = null;
-  private dbPath: string;
+  private supabase: SupabaseClient;
 
-  constructor(dbPath: string) {
-    this.dbPath = dbPath;
+  constructor(supabaseUrl: string, supabaseKey: string) {
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Supabase URL and Key are required");
+    }
+    this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
+  // We assume tables 'users' and 'user_profiles' exist in Supabase.
+  // SQL for tables:
+  /*
+  create table users (
+    id text primary key,
+    email text not null unique,
+    password_hash text not null,
+    full_name text,
+    agile_role text not null default 'Developer',
+    created_at timestamp with time zone not null
+  );
+
+  create table user_profiles (
+    user_id text primary key references users(id),
+    display_name text,
+    job_title text,
+    bio text,
+    timezone text,
+    phone text,
+    updated_at timestamp with time zone not null
+  );
+  */
+
   async init() {
-    const dir = path.dirname(this.dbPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    this.db = await open({
-      filename: this.dbPath,
-      driver: sqlite3.Database
-    });
-
-    await this.db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        email TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        full_name TEXT,
-        agile_role TEXT NOT NULL DEFAULT 'Developer',
-        created_at TEXT NOT NULL
-      )
-    `);
-
-    // Migration for agile_role
-    const columns = await this.db.all("PRAGMA table_info(users)");
-    const hasAgileRole = columns.some(col => col.name === 'agile_role');
-    if (!hasAgileRole) {
-      await this.db.exec("ALTER TABLE users ADD COLUMN agile_role TEXT NOT NULL DEFAULT 'Developer'");
-    }
-
-    await this.db.exec(`
-      CREATE TABLE IF NOT EXISTS user_profiles (
-        user_id TEXT PRIMARY KEY,
-        display_name TEXT,
-        job_title TEXT,
-        bio TEXT,
-        timezone TEXT,
-        phone TEXT,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      )
-    `);
+    // No-op for Supabase as it's a managed service.
+    // In a real app, you might run migrations here or use Prisma/Drizzle.
   }
 
   async createUser(data: { email: string; password_hash: string; full_name: string | null; agile_role: string }): Promise<UserRecord> {
@@ -84,44 +68,55 @@ export class UserStore {
       created_at: new Date().toISOString(),
     };
 
-    await this.db!.run(
-      "INSERT INTO users (id, email, password_hash, full_name, agile_role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-      [user.id, user.email, user.password_hash, user.full_name, user.agile_role, user.created_at]
-    );
+    const { error } = await this.supabase
+      .from('users')
+      .insert([user]);
 
+    if (error) throw error;
     return user;
   }
 
   async getUserByEmail(email: string): Promise<UserRecord | null> {
-    const row = await this.db!.get(
-      "SELECT id, email, password_hash, full_name, agile_role, created_at FROM users WHERE email = ?",
-      [email.toLowerCase().trim()]
-    );
-    return row || null;
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('email', email.toLowerCase().trim())
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
+    return data || null;
   }
 
   async getUserById(userId: string): Promise<UserRecord | null> {
-    const row = await this.db!.get(
-      "SELECT id, email, password_hash, full_name, agile_role, created_at FROM users WHERE id = ?",
-      [userId]
-    );
-    return row || null;
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data || null;
   }
 
   async updateUserRole(userId: string, agileRole: string): Promise<UserRecord | null> {
-    await this.db!.run(
-      "UPDATE users SET agile_role = ? WHERE id = ?",
-      [agileRole, userId]
-    );
+    const { error } = await this.supabase
+      .from('users')
+      .update({ agile_role: agileRole })
+      .eq('id', userId);
+
+    if (error) throw error;
     return this.getUserById(userId);
   }
 
   async getUserProfile(userId: string): Promise<UserProfileRecord | null> {
-    const row = await this.db!.get(
-      "SELECT user_id, display_name, job_title, bio, timezone, phone, updated_at FROM user_profiles WHERE user_id = ?",
-      [userId]
-    );
-    return row || null;
+    const { data, error } = await this.supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data || null;
   }
 
   async upsertUserProfile(data: {
@@ -134,26 +129,19 @@ export class UserStore {
   }): Promise<UserProfileRecord> {
     const now = new Date().toISOString();
 
-    await this.db!.run(
-      `INSERT INTO user_profiles (user_id, display_name, job_title, bio, timezone, phone, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET
-         display_name = excluded.display_name,
-         job_title = excluded.job_title,
-         bio = excluded.bio,
-         timezone = excluded.timezone,
-         phone = excluded.phone,
-         updated_at = excluded.updated_at`,
-      [
-        data.user_id,
-        data.display_name?.trim() || null,
-        data.job_title?.trim() || null,
-        data.bio?.trim() || null,
-        data.profile_timezone?.trim() || null,
-        data.phone?.trim() || null,
-        now
-      ]
-    );
+    const { error } = await this.supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: data.user_id,
+        display_name: data.display_name?.trim() || null,
+        job_title: data.job_title?.trim() || null,
+        bio: data.bio?.trim() || null,
+        timezone: data.profile_timezone?.trim() || null,
+        phone: data.phone?.trim() || null,
+        updated_at: now
+      }, { onConflict: 'user_id' });
+
+    if (error) throw error;
 
     const profile = await this.getUserProfile(data.user_id);
     if (!profile) throw new Error("Failed to persist user profile");
