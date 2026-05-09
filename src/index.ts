@@ -20,7 +20,7 @@ async function startServer() {
 
   app.use(buildRouter(store, settings.authSecret, settings.accessTokenTtlMinutes));
 
-  const port = process.env.PORT || 8000;
+  const port = process.env.PORT || 3001;
   app.listen(port, () => {
     console.log(`Authentication Service (Node.js) listening on port ${port}`);
   });
