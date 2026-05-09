@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { UserStore } from '../storage/userStore';
+import { ProjectStore } from '../storage/projectStore';
 import { 
   hashPassword, 
   verifyPassword, 
@@ -12,11 +13,19 @@ import {
   UpdateRoleRequestSchema, 
   UserProfileUpsertRequestSchema,
   UserResponse,
-  UserProfileResponse
+  UserProfileResponse,
+  ProjectCreateRequestSchema,
+  ProjectInviteRequestSchema,
+  ProjectResponse
 } from '../models/schemas';
 import { ZodError } from 'zod';
 
-export function buildRouter(store: UserStore, authSecret: string, tokenTtlMinutes: number): Router {
+export function buildRouter(
+  userStore: UserStore, 
+  projectStore: ProjectStore,
+  authSecret: string, 
+  tokenTtlMinutes: number
+): Router {
   const router = Router();
 
   const validateEmail = (email: string): string => {
@@ -63,7 +72,7 @@ export function buildRouter(store: UserStore, authSecret: string, tokenTtlMinute
       throw { status: 401, message: err.message };
     }
 
-    const user = await store.getUserById(payload.sub);
+    const user = await userStore.getUserById(payload.sub);
     if (!user) throw { status: 401, message: "User not found" };
     return user;
   };
@@ -79,10 +88,10 @@ export function buildRouter(store: UserStore, authSecret: string, tokenTtlMinute
       const body = RegisterRequestSchema.parse(req.body);
       const email = validateEmail(body.email);
 
-      const existing = await store.getUserByEmail(email);
+      const existing = await userStore.getUserByEmail(email);
       if (existing) return res.status(409).json({ detail: "User already exists" });
 
-      const user = await store.createUser({
+      const user = await userStore.createUser({
         email,
         password_hash: hashPassword(body.password),
         full_name: body.full_name || null,
@@ -106,7 +115,7 @@ export function buildRouter(store: UserStore, authSecret: string, tokenTtlMinute
     try {
       const body = LoginRequestSchema.parse(req.body);
       const email = validateEmail(body.email);
-      const user = await store.getUserByEmail(email);
+      const user = await userStore.getUserByEmail(email);
 
       if (!user || !verifyPassword(body.password, user.password_hash)) {
         return res.status(401).json({ detail: "Invalid credentials" });
@@ -139,7 +148,7 @@ export function buildRouter(store: UserStore, authSecret: string, tokenTtlMinute
     try {
       const user = await getCurrentUser(req.headers.authorization);
       const body = UpdateRoleRequestSchema.parse(req.body);
-      const updatedUser = await store.updateUserRole(user.id, body.agile_role);
+      const updatedUser = await userStore.updateUserRole(user.id, body.agile_role);
       if (!updatedUser) return res.status(404).json({ detail: "User not found" });
       res.json(toUserResponse(updatedUser));
     } catch (err) {
@@ -166,7 +175,7 @@ export function buildRouter(store: UserStore, authSecret: string, tokenTtlMinute
   router.get('/auth/profile', async (req, res, next) => {
     try {
       const user = await getCurrentUser(req.headers.authorization);
-      const profile = await store.getUserProfile(user.id);
+      const profile = await userStore.getUserProfile(user.id);
       if (!profile) return res.status(404).json({ detail: "Profile not found" });
       res.json(toProfileResponse(profile));
     } catch (err) {
@@ -179,7 +188,7 @@ export function buildRouter(store: UserStore, authSecret: string, tokenTtlMinute
     try {
       const user = await getCurrentUser(req.headers.authorization);
       const body = UserProfileUpsertRequestSchema.parse(req.body);
-      const profile = await store.upsertUserProfile({
+      const profile = await userStore.upsertUserProfile({
         user_id: user.id,
         display_name: body.display_name || null,
         job_title: body.job_title || null,
@@ -188,6 +197,71 @@ export function buildRouter(store: UserStore, authSecret: string, tokenTtlMinute
         phone: body.phone || null,
       });
       res.json(toProfileResponse(profile));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // PROJECTS
+
+  // List user projects
+  router.get('/projects', async (req, res, next) => {
+    try {
+      const user = await getCurrentUser(req.headers.authorization);
+      const projects = await projectStore.getUserProjects(user.id);
+      res.json(projects);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Create project
+  router.post('/projects', async (req, res, next) => {
+    try {
+      const user = await getCurrentUser(req.headers.authorization);
+      const body = ProjectCreateRequestSchema.parse(req.body);
+      
+      const project = await projectStore.createProject({
+        name: body.name,
+        description: body.description || "",
+        owner_id: user.id,
+        is_private: body.is_private
+      });
+
+      // Fetch the project again with full metadata (role, memberCount)
+      const userProjects = await projectStore.getUserProjects(user.id);
+      const fullProject = userProjects.find(p => p.id === project.id);
+      
+      res.status(201).json(fullProject || project);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Invite member to project
+  router.post('/projects/:id/invite', async (req, res, next) => {
+    try {
+      const user = await getCurrentUser(req.headers.authorization);
+      const projectId = req.params.id;
+      const body = ProjectInviteRequestSchema.parse(req.body);
+
+      // Verify the inviter has access to the project
+      const projects = await projectStore.getUserProjects(user.id);
+      const project = projects.find(p => p.id === projectId);
+
+      if (!project) return res.status(404).json({ detail: "Project not found" });
+      if (project.userRole !== 'Admin') {
+        return res.status(403).json({ detail: "Only admins can invite members" });
+      }
+
+      const invitation = await projectStore.createInvitation({
+        project_id: projectId,
+        email: body.email,
+        role: body.role,
+        inviter_id: user.id
+      });
+
+      res.status(201).json(invitation);
     } catch (err) {
       next(err);
     }

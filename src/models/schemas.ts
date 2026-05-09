@@ -68,3 +68,30 @@ export interface TokenResponse {
   expires_in: number;
   user: UserResponse;
 }
+
+// Projects
+export const ProjectCreateRequestSchema = z.object({
+  name: z.string().min(2).max(100),
+  description: z.string().max(500).optional(),
+  is_private: z.boolean().default(false),
+});
+
+export type ProjectCreateRequest = z.infer<typeof ProjectCreateRequestSchema>;
+
+export const ProjectInviteRequestSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(["Admin", "Editor", "Viewer"]).default("Editor"),
+});
+
+export type ProjectInviteRequest = z.infer<typeof ProjectInviteRequestSchema>;
+
+export interface ProjectResponse {
+  id: string;
+  name: string;
+  description: string;
+  owner_id: string;
+  is_private: boolean;
+  userRole: string;
+  memberCount: number;
+  created_at: string;
+}

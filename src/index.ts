@@ -2,12 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import { loadSettings } from './config/config';
 import { UserStore } from './storage/userStore';
+import { ProjectStore } from './storage/projectStore';
 import { buildRouter } from './api/routes';
 
 async function startServer() {
   const settings = loadSettings();
-  const store = new UserStore(settings.supabaseUrl, settings.supabaseKey, settings.supabaseSchema);
-  await store.init();
+  const userStore = new UserStore(settings.supabaseUrl, settings.supabaseKey, settings.supabaseSchema);
+  const projectStore = new ProjectStore(settings.supabaseUrl, settings.supabaseKey, settings.supabaseSchema);
+  await userStore.init();
 
   const app = express();
 
@@ -18,7 +20,7 @@ async function startServer() {
 
   app.use(express.json());
 
-  app.use(buildRouter(store, settings.authSecret, settings.accessTokenTtlMinutes));
+  app.use(buildRouter(userStore, projectStore, settings.authSecret, settings.accessTokenTtlMinutes));
 
   const port = process.env.PORT || 3001;
   app.listen(port, () => {
