@@ -17,6 +17,7 @@ export interface AuthSettings {
   accessTokenTtlMinutes: number;
   supabaseUrl: string;
   supabaseKey: string;
+  supabaseSchema: string;
   corsOrigins: string[];
 }
 
@@ -31,6 +32,7 @@ export function loadSettings(): AuthSettings {
     accessTokenTtlMinutes: Math.max(5, parseInt(process.env.AUTH_ACCESS_TOKEN_TTL_MINUTES || "120", 10)),
     supabaseUrl: process.env.SUPABASE_URL || "",
     supabaseKey: process.env.SUPABASE_KEY || "",
+    supabaseSchema: process.env.SUPABASE_SCHEMA || "public",
     corsOrigins: corsOrigins,
   };
 }

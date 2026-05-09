@@ -22,12 +22,14 @@ export interface UserProfileRecord {
 
 export class UserStore {
   private supabase: SupabaseClient;
+  private schema: string;
 
-  constructor(supabaseUrl: string, supabaseKey: string) {
+  constructor(supabaseUrl: string, supabaseKey: string, schema: string = 'public') {
     if (!supabaseUrl || !supabaseKey) {
       throw new Error("Supabase URL and Key are required");
     }
     this.supabase = createClient(supabaseUrl, supabaseKey);
+    this.schema = schema;
   }
 
   // We assume tables 'users' and 'user_profiles' exist in Supabase.
@@ -69,6 +71,7 @@ export class UserStore {
     };
 
     const { error } = await this.supabase
+      .schema(this.schema)
       .from('users')
       .insert([user]);
 
@@ -78,6 +81,7 @@ export class UserStore {
 
   async getUserByEmail(email: string): Promise<UserRecord | null> {
     const { data, error } = await this.supabase
+      .schema(this.schema)
       .from('users')
       .select('*')
       .eq('email', email.toLowerCase().trim())
@@ -89,6 +93,7 @@ export class UserStore {
 
   async getUserById(userId: string): Promise<UserRecord | null> {
     const { data, error } = await this.supabase
+      .schema(this.schema)
       .from('users')
       .select('*')
       .eq('id', userId)
@@ -100,6 +105,7 @@ export class UserStore {
 
   async updateUserRole(userId: string, agileRole: string): Promise<UserRecord | null> {
     const { error } = await this.supabase
+      .schema(this.schema)
       .from('users')
       .update({ agile_role: agileRole })
       .eq('id', userId);
@@ -110,6 +116,7 @@ export class UserStore {
 
   async getUserProfile(userId: string): Promise<UserProfileRecord | null> {
     const { data, error } = await this.supabase
+      .schema(this.schema)
       .from('user_profiles')
       .select('*')
       .eq('user_id', userId)
@@ -130,6 +137,7 @@ export class UserStore {
     const now = new Date().toISOString();
 
     const { error } = await this.supabase
+      .schema(this.schema)
       .from('user_profiles')
       .upsert({
         user_id: data.user_id,
