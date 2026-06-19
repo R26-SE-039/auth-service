@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-import path from 'path';
 
 dotenv.config();
 
@@ -15,9 +14,9 @@ const DEFAULT_CORS = [
 export interface AuthSettings {
   authSecret: string;
   accessTokenTtlMinutes: number;
-  supabaseUrl: string;
-  supabaseKey: string;
-  supabaseSchema: string;
+  databaseUrl: string;
+  jwtSecret: string;
+  jwtExpiresIn: string;
   corsOrigins: string[];
 }
 
@@ -30,9 +29,9 @@ export function loadSettings(): AuthSettings {
   return {
     authSecret: process.env.AUTH_SECRET || "dev-change-me-secret",
     accessTokenTtlMinutes: Math.max(5, parseInt(process.env.AUTH_ACCESS_TOKEN_TTL_MINUTES || "120", 10)),
-    supabaseUrl: process.env.SUPABASE_URL || "",
-    supabaseKey: process.env.SUPABASE_KEY || "",
-    supabaseSchema: process.env.SUPABASE_SCHEMA || "public",
+    databaseUrl: process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/user_db",
+    jwtSecret: process.env.JWT_SECRET || "dev-change-me-secret",
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || "2h",
     corsOrigins: corsOrigins,
   };
 }

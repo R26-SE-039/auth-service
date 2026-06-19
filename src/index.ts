@@ -1,15 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import { loadSettings } from './config/config';
-import { UserStore } from './storage/userStore';
-import { ProjectStore } from './storage/projectStore';
-import { buildRouter } from './api/routes';
+import { buildAuthRouter } from './routes/auth.routes';
+import { pool } from './config/database';
 
 async function startServer() {
   const settings = loadSettings();
-  const userStore = new UserStore(settings.supabaseUrl, settings.supabaseKey, settings.supabaseSchema);
-  const projectStore = new ProjectStore(settings.supabaseUrl, settings.supabaseKey, settings.supabaseSchema);
-  await userStore.init();
+
+  // Test database connection
+  try {
+    const res = await pool.query('SELECT NOW()');
+    console.log('Connected to PostgreSQL database at:', res.rows[0].now);
+  } catch (error) {
+    console.error('Failed to connect to the database:', error);
+    process.exit(1);
+  }
 
   const app = express();
 
@@ -20,11 +25,15 @@ async function startServer() {
 
   app.use(express.json());
 
-  app.use(buildRouter(userStore, projectStore, settings.authSecret, settings.accessTokenTtlMinutes));
+  app.use('/auth', buildAuthRouter());
+
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
 
   const port = process.env.PORT || 3001;
   app.listen(port, () => {
-    console.log(`Authentication Service (Node.js) listening on port ${port}`);
+    console.log(`Authentication Service (Node.js/PostgreSQL) listening on port ${port}`);
   });
 }
 
