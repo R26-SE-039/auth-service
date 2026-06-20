@@ -19,3 +19,9 @@ export const query = async (text: string, params?: any[]) => {
   // console.log('executed query', { text, duration, rows: res.rowCount });
   return res;
 };
+
+export const getClient = async () => {
+  const client = await pool.connect();
+  return client;
+};
+

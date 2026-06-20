@@ -2,7 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import { loadSettings } from './config/config';
 import { buildAuthRouter } from './routes/auth.routes';
+import { buildOrganizationRouter } from './routes/organization.routes';
+import { buildProjectRouter } from './routes/project.routes';
+import { buildProjectMemberRouter } from './routes/project-member.routes';
+import { buildUserRouter } from './routes/user.routes';
 import { pool } from './config/database';
+import { errorHandler } from './middleware/error';
 
 async function startServer() {
   const settings = loadSettings();
@@ -25,11 +30,19 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Mount API Routers
   app.use('/auth', buildAuthRouter());
+  app.use('/organizations', buildOrganizationRouter());
+  app.use('/projects', buildProjectRouter());
+  app.use('/project-members', buildProjectMemberRouter());
+  app.use('/users', buildUserRouter());
 
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
   });
+
+  // Global Error Handler
+  app.use(errorHandler);
 
   const port = process.env.PORT || 3001;
   app.listen(port, () => {
@@ -41,3 +54,4 @@ startServer().catch(err => {
   console.error("Failed to start server:", err);
   process.exit(1);
 });
+

@@ -1,22 +1,12 @@
 import { z } from 'zod';
-
-export const AgileRoleSchema = z.enum([
-  "PO",
-  "Scrum Master",
-  "Developer",
-  "QA",
-  "BA",
-  "UX Designer",
-  "DevOps Engineer",
-]);
-
-export type AgileRole = z.infer<typeof AgileRoleSchema>;
+import { UserRole, ProjectRole } from '../core/types';
 
 export const RegisterRequestSchema = z.object({
   email: z.string().min(5).max(255).email(),
   password: z.string().min(8).max(512),
-  full_name: z.string().max(120).optional().nullable(),
-  agile_role: AgileRoleSchema.default("Developer"),
+  companyName: z.string().min(2).max(255),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
 });
 
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
@@ -28,70 +18,45 @@ export const LoginRequestSchema = z.object({
 
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
-export interface UserResponse {
-  id: string;
-  email: string;
-  full_name: string | null;
-  agile_role: AgileRole;
-  created_at: string;
-}
+export const RefreshTokenRequestSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+
+export type RefreshTokenRequest = z.infer<typeof RefreshTokenRequestSchema>;
 
 export const UpdateRoleRequestSchema = z.object({
-  agile_role: AgileRoleSchema,
+  role: z.nativeEnum(UserRole),
 });
 
 export type UpdateRoleRequest = z.infer<typeof UpdateRoleRequestSchema>;
 
 export const UserProfileUpsertRequestSchema = z.object({
-  display_name: z.string().max(120).optional().nullable(),
-  job_title: z.string().max(120).optional().nullable(),
-  bio: z.string().max(1000).optional().nullable(),
-  timezone: z.string().max(80).optional().nullable(),
-  phone: z.string().max(40).optional().nullable(),
+  firstName: z.string().max(100).optional().nullable(),
+  lastName: z.string().max(100).optional().nullable(),
+  jobTitle: z.string().max(100).optional().nullable(),
+  avatarUrl: z.string().url().max(1000).optional().nullable(),
 });
 
 export type UserProfileUpsertRequest = z.infer<typeof UserProfileUpsertRequestSchema>;
 
-export interface UserProfileResponse {
-  user_id: string;
-  display_name: string | null;
-  job_title: string | null;
-  bio: string | null;
-  timezone: string | null;
-  phone: string | null;
-  updated_at: string;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  user: UserResponse;
-}
-
-// Projects
 export const ProjectCreateRequestSchema = z.object({
-  name: z.string().min(2).max(100),
-  description: z.string().max(500).optional(),
-  is_private: z.boolean().default(false),
+  name: z.string().min(2).max(255),
+  description: z.string().max(1000).optional().nullable(),
 });
 
 export type ProjectCreateRequest = z.infer<typeof ProjectCreateRequestSchema>;
 
-export const ProjectInviteRequestSchema = z.object({
-  email: z.string().email(),
-  role: z.enum(["Admin", "Editor", "Viewer"]).default("Editor"),
+export const ProjectUpdateRequestSchema = z.object({
+  name: z.string().min(2).max(255).optional(),
+  description: z.string().max(1000).optional().nullable(),
+  status: z.string().max(50).optional(),
 });
 
-export type ProjectInviteRequest = z.infer<typeof ProjectInviteRequestSchema>;
+export type ProjectUpdateRequest = z.infer<typeof ProjectUpdateRequestSchema>;
 
-export interface ProjectResponse {
-  id: string;
-  name: string;
-  description: string;
-  owner_id: string;
-  is_private: boolean;
-  userRole: string;
-  memberCount: number;
-  created_at: string;
-}
+export const ProjectMemberAddRequestSchema = z.object({
+  userId: z.string().uuid(),
+  role: z.nativeEnum(ProjectRole).default(ProjectRole.MEMBER),
+});
+
+export type ProjectMemberAddRequest = z.infer<typeof ProjectMemberAddRequestSchema>;

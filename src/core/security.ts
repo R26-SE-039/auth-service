@@ -1,54 +1,64 @@
-import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { JwtPayload, RefreshTokenPayload } from './types';
 
-export interface TokenPayload {
-  sub: string;
-  exp: number;
-  iat: number;
+export async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 10;
+  return bcrypt.hash(password, saltRounds);
 }
 
-export function hashPassword(password: string): string {
-  const salt = crypto.randomBytes(8).toString('hex'); // 16 chars hex
-  const iterations = 120000;
-  const hash = crypto.pbkdf2Sync(password, salt, iterations, 32, 'sha256');
-  return `pbkdf2_sha256$${iterations}$${salt}$${hash.toString('hex')}`;
+export async function comparePassword(password: string, passwordHash: string): Promise<boolean> {
+  return bcrypt.compare(password, passwordHash);
 }
 
-export function verifyPassword(password: string, passwordHash: string): boolean {
-  try {
-    const [algorithm, iterationsStr, salt, hashHex] = passwordHash.split('$');
-    if (algorithm !== 'pbkdf2_sha256') return false;
-    const iterations = parseInt(iterationsStr, 10);
-    const hash = crypto.pbkdf2Sync(password, salt, iterations, 32, 'sha256');
-    return crypto.timingSafeEqual(Buffer.from(hash.toString('hex')), Buffer.from(hashHex));
-  } catch (error) {
-    return false;
-  }
+export function generateAccessToken(payload: JwtPayload, secret: string, expiresInMinutes: number): string {
+  return jwt.sign(payload, secret, {
+    algorithm: 'HS256',
+    expiresIn: `${expiresInMinutes}m`,
+  });
 }
 
-export function createAccessToken(subject: string, secret: string, ttlMinutes: number): string {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    sub: subject,
-    iat: now,
-    exp: now + (ttlMinutes * 60),
-  };
-  return jwt.sign(payload, secret, { algorithm: 'HS256' });
+export function generateRefreshToken(payload: RefreshTokenPayload, secret: string, expiresInDays: number): string {
+  return jwt.sign(payload, secret, {
+    algorithm: 'HS256',
+    expiresIn: `${expiresInDays}d`,
+  });
 }
 
-export function decodeAccessToken(token: string, secret: string): TokenPayload {
+export function verifyAccessToken(token: string, secret: string): JwtPayload {
   try {
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] }) as any;
-    if (!decoded.sub) throw new Error("Invalid token subject");
+    if (!decoded.userId || !decoded.organizationId || !decoded.role || !decoded.email) {
+      throw new Error('Invalid access token payload structure');
+    }
     return {
-      sub: decoded.sub,
-      iat: decoded.iat,
-      exp: decoded.exp,
+      userId: decoded.userId,
+      organizationId: decoded.organizationId,
+      role: decoded.role,
+      email: decoded.email,
     };
   } catch (error: any) {
     if (error.name === 'TokenExpiredError') {
-      throw new Error("Token expired");
+      throw new Error('Access token expired');
     }
-    throw new Error("Invalid token signature");
+    throw new Error('Invalid access token signature');
+  }
+}
+
+export function verifyRefreshToken(token: string, secret: string): RefreshTokenPayload {
+  try {
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] }) as any;
+    if (!decoded.userId || !decoded.jti) {
+      throw new Error('Invalid refresh token payload structure');
+    }
+    return {
+      userId: decoded.userId,
+      jti: decoded.jti,
+    };
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('Refresh token expired');
+    }
+    throw new Error('Invalid refresh token signature');
   }
 }

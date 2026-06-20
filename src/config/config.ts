@@ -18,6 +18,8 @@ export interface AuthSettings {
   jwtSecret: string;
   jwtExpiresIn: string;
   corsOrigins: string[];
+  refreshTokenSecret: string;
+  refreshTokenTtlDays: number;
 }
 
 export function loadSettings(): AuthSettings {
@@ -33,5 +35,8 @@ export function loadSettings(): AuthSettings {
     jwtSecret: process.env.JWT_SECRET || "dev-change-me-secret",
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "2h",
     corsOrigins: corsOrigins,
+    refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET || "dev-change-me-refresh-secret",
+    refreshTokenTtlDays: parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || "7", 10),
   };
 }
+

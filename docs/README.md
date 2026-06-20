@@ -1,23 +1,52 @@
 # Auth Service Documentation
 
-## Postman Collection
-The file `auth_service_collection.json` contains all the endpoints for the Authentication Service.
+The Auth Service is a fully self-managed Authentication & Authorization microservice built with Node.js, TypeScript, Express, and PostgreSQL.
 
-### How to use:
-1. Open Postman.
-2. Click **Import**.
-3. Select `auth_service_collection.json`.
-4. Run the service using `pnpm dev`.
-5. The collection uses two variables:
-   - `base_url`: Defaults to `http://localhost:8000`.
-   - `auth_token`: Automatically populated when you run the **Register** or **Login** requests.
+## How to run locally:
+1. Ensure Docker Desktop is running.
+2. Copy `.env.example` to `.env` and fill in any required variables.
+3. Start the PostgreSQL database:
+   ```bash
+   docker-compose up -d
+   ```
+4. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+5. Run the development server:
+   ```bash
+   pnpm dev
+   ```
+The service will start on `http://localhost:3001`.
 
-### Endpoints:
+## Endpoints:
+
+### Auth
 - **Health**: `GET /health` - Service status.
-- **Register**: `POST /auth/register` - Create a new user.
-- **Login**: `POST /auth/login` - Authenticate and get a token.
-- **Get Me**: `GET /auth/me` - Get current user info (Requires Auth).
-- **Update Role**: `PATCH /auth/role` - Update user's agile role (Requires Auth).
-- **Get Roles**: `GET /auth/roles` - List available agile roles.
-- **Get Profile**: `GET /auth/profile` - Get user profile (Requires Auth).
-- **Upsert Profile**: `PUT /auth/profile` - Create/Update user profile (Requires Auth).
+- **Register**: `POST /auth/register` - Create a new user & organization. Returns tokens.
+- **Login**: `POST /auth/login` - Authenticate and get an access token and refresh token.
+- **Refresh**: `POST /auth/refresh` - Refresh access tokens using a valid refresh token.
+
+### Organizations
+- **Get Org**: `GET /organizations/:id`
+- **Update Org**: `PUT /organizations/:id`
+
+### Projects
+- **Create Project**: `POST /projects`
+- **List Projects**: `GET /projects`
+- **Get Project**: `GET /projects/:id`
+- **Update Project**: `PUT /projects/:id`
+- **Delete Project**: `DELETE /projects/:id`
+
+### Project Members
+- **Add Member**: `POST /project-members/:projectId/members`
+- **Remove Member**: `DELETE /project-members/:projectId/members/:userId`
+- **List Members**: `GET /project-members/:projectId/members`
+
+### Users
+- **Get Profile**: `GET /users/me`
+- **Update Profile**: `PUT /users/me`
+- **List Org Users**: `GET /users`
+- **Update User Role**: `PATCH /users/:id/role`
+
+*Note: All endpoints except `/health`, `/auth/register`, `/auth/login`, and `/auth/refresh` require an `Authorization: Bearer <token>` header.*

@@ -1,15 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../core/security';
 import { loadSettings } from '../config/config';
+import { JwtPayload } from '../core/types';
 
 const settings = loadSettings();
 
 export interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    organizationId: string;
-    role: string;
-  };
+  user?: JwtPayload;
 }
 
 export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -18,15 +15,15 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
 
-    jwt.verify(token, settings.jwtSecret, (err, user) => {
-      if (err) {
-        return res.status(403).json({ error: 'Invalid or expired token.' });
-      }
-
-      req.user = user as AuthRequest['user'];
+    try {
+      const decodedPayload = verifyAccessToken(token, settings.jwtSecret);
+      req.user = decodedPayload;
       next();
-    });
+    } catch (error: any) {
+      return res.status(403).json({ error: error.message || 'Invalid or expired token.' });
+    }
   } else {
     res.status(401).json({ error: 'Authorization header missing or invalid.' });
   }
 };
+
