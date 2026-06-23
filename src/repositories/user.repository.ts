@@ -37,6 +37,12 @@ export class UserRepository {
     return res.rows[0] || null;
   }
 
+  async findOrganizationByName(companyName: string, client?: any): Promise<any | null> {
+    const q = client ? client.query.bind(client) : query;
+    const res = await q('SELECT * FROM organizations WHERE company_name = $1', [companyName]);
+    return res.rows[0] || null;
+  }
+
   async createOrganization(companyName: string, client?: any) {
     const q = client ? client.query.bind(client) : query;
     const res = await q(

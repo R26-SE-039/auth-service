@@ -22,6 +22,11 @@ export class AuthService {
     try {
       await client.query('BEGIN');
 
+      const existingOrg = await this.userRepository.findOrganizationByName(data.companyName, client);
+      if (existingOrg) {
+        throw new Error('An organization with this name already exists. Please request an invitation from the administrator.');
+      }
+
       const org = await this.userRepository.createOrganization(data.companyName, client);
       const passwordHash = await hashPassword(data.password);
       

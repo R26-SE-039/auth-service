@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Auth Service API (Node/Postgres)",
-    "description": "Postman collection for the self-hosted Authentication Service.",
+    "description": "Postman collection for the self-hosted Authentication & Authorization Service.\n\n**How to use:**\n1. Run `Register` or `Login` — tokens are auto-saved.\n2. The `auth_token` variable is then used automatically for all protected routes.\n3. For the Invitation flow: run `Send Invite`, grab the `inviteId` from the response, then run `Accept Invite` with the token from the server logs (Ethereal preview URL).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -11,12 +11,8 @@
         "method": "GET",
         "url": {
           "raw": "{{base_url}}/health",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "health"
-          ]
+          "host": ["{{base_url}}"],
+          "path": ["health"]
         }
       }
     },
@@ -24,7 +20,7 @@
       "name": "Auth",
       "item": [
         {
-          "name": "Register",
+          "name": "Register (New Org)",
           "event": [
             {
               "listen": "test",
@@ -33,9 +29,15 @@
                   "var jsonData = JSON.parse(responseBody);",
                   "if (jsonData.accessToken) {",
                   "    pm.environment.set(\"auth_token\", jsonData.accessToken);",
+                  "    pm.collectionVariables.set(\"auth_token\", jsonData.accessToken);",
                   "}",
                   "if (jsonData.refreshToken) {",
                   "    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);",
+                  "}",
+                  "if (jsonData.user && jsonData.user.organizationId) {",
+                  "    pm.environment.set(\"org_id\", jsonData.user.organizationId);",
+                  "    pm.collectionVariables.set(\"org_id\", jsonData.user.organizationId);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -45,10 +47,7 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -56,14 +55,10 @@
             },
             "url": {
               "raw": "{{base_url}}/auth/register",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "register"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Creates a brand new Organization and its first user (ORGANIZATION_OWNER). Auto-saves accessToken, refreshToken, and org_id."
           }
         },
         {
@@ -76,9 +71,15 @@
                   "var jsonData = JSON.parse(responseBody);",
                   "if (jsonData.accessToken) {",
                   "    pm.environment.set(\"auth_token\", jsonData.accessToken);",
+                  "    pm.collectionVariables.set(\"auth_token\", jsonData.accessToken);",
                   "}",
                   "if (jsonData.refreshToken) {",
                   "    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);",
+                  "}",
+                  "if (jsonData.user && jsonData.user.organizationId) {",
+                  "    pm.environment.set(\"org_id\", jsonData.user.organizationId);",
+                  "    pm.collectionVariables.set(\"org_id\", jsonData.user.organizationId);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -88,10 +89,7 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -99,14 +97,10 @@
             },
             "url": {
               "raw": "{{base_url}}/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates a user and returns a new access token and refresh token. Auto-saves both."
           }
         },
         {
@@ -119,9 +113,11 @@
                   "var jsonData = JSON.parse(responseBody);",
                   "if (jsonData.accessToken) {",
                   "    pm.environment.set(\"auth_token\", jsonData.accessToken);",
+                  "    pm.collectionVariables.set(\"auth_token\", jsonData.accessToken);",
                   "}",
                   "if (jsonData.refreshToken) {",
                   "    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -131,154 +127,72 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/auth/refresh",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "refresh"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Users",
-      "item": [
-        {
-          "name": "Get Profile (Me)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "raw": "{{base_url}}/auth/refresh-token",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh-token"]
             },
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/users/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users",
-                "me"
-              ]
-            }
+            "description": "Exchanges a valid refresh token for a new access token and a new refresh token (token rotation). Old refresh token is revoked."
           }
         },
         {
-          "name": "Update Profile (Me)",
+          "name": "Logout",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Revokes the current refresh token, effectively logging the user out. Requires a valid access token."
+          }
+        },
+        {
+          "name": "Accept Invite (Join Org)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = JSON.parse(responseBody);",
+                  "if (jsonData.accessToken) {",
+                  "    pm.environment.set(\"auth_token\", jsonData.accessToken);",
+                  "    pm.collectionVariables.set(\"auth_token\", jsonData.accessToken);",
+                  "}",
+                  "if (jsonData.refreshToken) {",
+                  "    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
               }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"firstName\": \"Updated\",\n    \"lastName\": \"Name\"\n}"
+              "raw": "{\n    \"inviteToken\": \"PASTE_INVITE_TOKEN_FROM_SERVER_LOGS_HERE\",\n    \"firstName\": \"New\",\n    \"lastName\": \"Member\",\n    \"password\": \"SecurePass123!\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/users/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users",
-                "me"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Users (Org Admin Only)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "raw": "{{base_url}}/auth/accept-invite",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "accept-invite"]
             },
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/users",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update User Role (Org Admin Only)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"role\": \"MEMBER\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/users/{{target_user_id}}/role",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users",
-                "{{target_user_id}}",
-                "role"
-              ]
-            }
+            "description": "Public endpoint. The invited user submits their invite token (from the email link) along with their desired name and password. Creates an account inside the existing organization and returns tokens."
           }
         }
       ]
@@ -291,61 +205,192 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "url": {
-              "raw": "{{base_url}}/organizations/{{org_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "organizations",
-                "{{org_id}}"
-              ]
-            }
+              "raw": "{{base_url}}/organizations",
+              "host": ["{{base_url}}"],
+              "path": ["organizations"]
+            },
+            "description": "Returns the organization details for the currently authenticated user's organization."
           }
         },
         {
-          "name": "Update Organization (Org Owner Only)",
+          "name": "Update Organization (Owner Only)",
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Acme Corp Updated\"\n}"
+              "raw": "{\n    \"companyName\": \"Acme Corp Updated\",\n    \"domain\": \"acmecorp.com\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/organizations/{{org_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "organizations",
-                "{{org_id}}"
-              ]
+              "raw": "{{base_url}}/organizations",
+              "host": ["{{base_url}}"],
+              "path": ["organizations"]
+            },
+            "description": "Updates the name/domain of the organization. Requires ORGANIZATION_OWNER role."
+          }
+        },
+        {
+          "name": "Send Invite (Owner/Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = JSON.parse(responseBody);",
+                  "if (jsonData.inviteId) {",
+                  "    pm.collectionVariables.set(\"invite_id\", jsonData.inviteId);",
+                  "    console.log('Invite ID saved:', jsonData.inviteId);",
+                  "    console.log('Check server logs for the Ethereal email preview URL to get the invite token.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"newmember@example.com\",\n    \"role\": \"MEMBER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/organizations/invites",
+              "host": ["{{base_url}}"],
+              "path": ["organizations", "invites"]
+            },
+            "description": "Sends an invitation email to the specified address to join the organization with the given role. Valid roles: ORGANIZATION_ADMIN, PROJECT_OWNER, MEMBER. Requires ORGANIZATION_OWNER or ORGANIZATION_ADMIN role. Auto-saves invite_id."
+          }
+        },
+        {
+          "name": "List Pending Invites (Owner/Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/organizations/invites",
+              "host": ["{{base_url}}"],
+              "path": ["organizations", "invites"]
+            },
+            "description": "Returns all invitations (pending and accepted) for the authenticated user's organization. Requires ORGANIZATION_OWNER or ORGANIZATION_ADMIN role."
+          }
+        },
+        {
+          "name": "Revoke Invite (Owner/Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/organizations/invites/{{invite_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["organizations", "invites", "{{invite_id}}"]
+            },
+            "description": "Permanently deletes a pending invitation by its ID. Use the invite_id saved from Send Invite. Requires ORGANIZATION_OWNER or ORGANIZATION_ADMIN role."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Returns the profile of the currently authenticated user."
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"firstName\": \"Updated\",\n    \"lastName\": \"Name\",\n    \"jobTitle\": \"Senior Engineer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Updates the authenticated user's profile (firstName, lastName, jobTitle, avatarUrl)."
+          }
+        },
+        {
+          "name": "List Org Users (Admin Only)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            },
+            "description": "Lists all users in the authenticated user's organization. Requires ORGANIZATION_OWNER or ORGANIZATION_ADMIN role."
+          }
+        },
+        {
+          "name": "Update User Role (Admin Only)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role\": \"ORGANIZATION_ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/{{target_user_id}}/role",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{target_user_id}}", "role"]
+            },
+            "description": "Updates the role of a specific user within the same organization. Valid roles: ORGANIZATION_ADMIN, PROJECT_OWNER, MEMBER."
           }
         }
       ]
@@ -355,23 +400,28 @@
       "item": [
         {
           "name": "Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = JSON.parse(responseBody);",
+                  "if (jsonData.project && jsonData.project.id) {",
+                  "    pm.collectionVariables.set(\"project_id\", jsonData.project.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -379,13 +429,10 @@
             },
             "url": {
               "raw": "{{base_url}}/projects",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "projects"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["projects"]
+            },
+            "description": "Creates a new project within the authenticated user's organization. The creator is automatically added as PROJECT_OWNER. Auto-saves project_id."
           }
         },
         {
@@ -393,24 +440,15 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/projects",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "projects"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["projects"]
+            },
+            "description": "Lists all projects in the authenticated user's organization."
           }
         },
         {
@@ -418,25 +456,15 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/projects/{{project_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "projects",
-                "{{project_id}}"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}"]
+            },
+            "description": "Returns details for a single project by ID."
           }
         },
         {
@@ -444,35 +472,22 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Updated Project Name\"\n}"
+              "raw": "{\n    \"name\": \"Updated Project Name\",\n    \"description\": \"Updated description\",\n    \"status\": \"active\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/projects/{{project_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "projects",
-                "{{project_id}}"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}"]
+            },
+            "description": "Updates a project's name, description, or status."
           }
         },
         {
@@ -480,25 +495,15 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "DELETE",
             "url": {
               "raw": "{{base_url}}/projects/{{project_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "projects",
-                "{{project_id}}"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}"]
+            },
+            "description": "Permanently deletes a project and all its members. Requires PROJECT_OWNER or ORGANIZATION_OWNER role."
           }
         }
       ]
@@ -511,20 +516,11 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -532,15 +528,10 @@
             },
             "url": {
               "raw": "{{base_url}}/project-members/{{project_id}}/members",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "project-members",
-                "{{project_id}}",
-                "members"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["project-members", "{{project_id}}", "members"]
+            },
+            "description": "Adds a user (by userId) to a project with a given role. Valid roles: PROJECT_OWNER, MEMBER."
           }
         },
         {
@@ -548,26 +539,15 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/project-members/{{project_id}}/members",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "project-members",
-                "{{project_id}}",
-                "members"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["project-members", "{{project_id}}", "members"]
+            },
+            "description": "Lists all members of a specific project."
           }
         },
         {
@@ -575,27 +555,15 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{auth_token}}",
-                  "type": "string"
-                }
-              ]
+              "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
             },
             "method": "DELETE",
             "url": {
               "raw": "{{base_url}}/project-members/{{project_id}}/members/{{target_user_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "project-members",
-                "{{project_id}}",
-                "members",
-                "{{target_user_id}}"
-              ]
-            }
+              "host": ["{{base_url}}"],
+              "path": ["project-members", "{{project_id}}", "members", "{{target_user_id}}"]
+            },
+            "description": "Removes a user from a project."
           }
         }
       ]
@@ -629,6 +597,11 @@
     },
     {
       "key": "target_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invite_id",
       "value": "",
       "type": "string"
     }

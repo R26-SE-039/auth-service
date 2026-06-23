@@ -60,3 +60,24 @@ export const ProjectMemberAddRequestSchema = z.object({
 });
 
 export type ProjectMemberAddRequest = z.infer<typeof ProjectMemberAddRequestSchema>;
+
+// ─── Invitation Schemas ────────────────────────────────────────────────────
+
+export const CreateInviteRequestSchema = z.object({
+  email: z.string().email().max(255),
+  role: z.nativeEnum(UserRole).refine(
+    val => val !== UserRole.ORGANIZATION_OWNER,
+    { message: 'Cannot invite a user with the ORGANIZATION_OWNER role.' }
+  ),
+});
+
+export type CreateInviteRequest = z.infer<typeof CreateInviteRequestSchema>;
+
+export const AcceptInviteRequestSchema = z.object({
+  inviteToken: z.string().min(64).max(64),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  password: z.string().min(8).max(512),
+});
+
+export type AcceptInviteRequest = z.infer<typeof AcceptInviteRequestSchema>;

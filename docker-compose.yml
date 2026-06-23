@@ -6,7 +6,7 @@ services:
     container_name: user_db
     environment:
       POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: nextgen_db
       POSTGRES_DB: user_db
     ports:
       - "5433:5432"
@@ -15,7 +15,7 @@ services:
       - ./database/init:/docker-entrypoint-initdb.d
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d user_db"]
+      test: [ "CMD-SHELL", "pg_isready -U user -d user_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
