@@ -52,6 +52,8 @@ export class AuthService {
           email: user.email,
           role: user.role,
           organizationId: user.organization_id,
+          firstName: data.firstName,
+          lastName: data.lastName,
         },
       };
     } catch (error) {
@@ -73,6 +75,8 @@ export class AuthService {
       throw new Error('Invalid credentials.');
     }
 
+    const profile = await this.userRepository.findProfileByUserId(user.id);
+
     const tokens = await this.issueTokens({
       userId: user.id,
       organizationId: user.organization_id,
@@ -88,6 +92,8 @@ export class AuthService {
         email: user.email,
         role: user.role,
         organizationId: user.organization_id,
+        firstName: profile?.first_name || '',
+        lastName: profile?.last_name || '',
       },
     };
   }
