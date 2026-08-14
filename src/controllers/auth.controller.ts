@@ -36,11 +36,13 @@ export class AuthController {
 
   async logout(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { refreshToken } = req.body;
-      await authService.logout(refreshToken);
+      const { refreshToken } = req.body || {};
+      if (refreshToken) {
+        await authService.logout(refreshToken);
+      }
       return res.status(200).json({ message: 'Logged out successfully' });
     } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      return res.status(200).json({ message: 'Logged out successfully' });
     }
   }
 }
