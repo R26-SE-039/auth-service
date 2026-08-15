@@ -6,6 +6,7 @@ import { buildOrganizationRouter } from './routes/organization.routes';
 import { buildProjectRouter } from './routes/project.routes';
 import { buildProjectMemberRouter } from './routes/project-member.routes';
 import { buildUserRouter } from './routes/user.routes';
+import { buildIterationRouter } from './routes/iteration.routes';
 import { pool } from './config/database';
 import { errorHandler } from './middleware/error';
 
@@ -36,6 +37,7 @@ async function startServer() {
   app.use('/projects', buildProjectRouter());
   app.use('/project-members', buildProjectMemberRouter());
   app.use('/users', buildUserRouter());
+  app.use('/projects/:projectId/iterations', buildIterationRouter());
 
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });

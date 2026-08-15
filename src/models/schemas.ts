@@ -81,3 +81,35 @@ export const AcceptInviteRequestSchema = z.object({
 });
 
 export type AcceptInviteRequest = z.infer<typeof AcceptInviteRequestSchema>;
+
+// ─── Iteration Schemas ────────────────────────────────────────────────────
+
+export const CreateIterationRequestSchema = z.object({
+  name: z.string().min(1).max(255),
+  goal: z.string().max(2000).optional().nullable(),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'start_date must be in YYYY-MM-DD format'),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'end_date must be in YYYY-MM-DD format'),
+}).refine(
+  (data) => new Date(data.end_date) > new Date(data.start_date),
+  { message: 'end_date must be after start_date', path: ['end_date'] }
+);
+
+export type CreateIterationRequest = z.infer<typeof CreateIterationRequestSchema>;
+
+export const UpdateIterationRequestSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  goal: z.string().max(2000).optional().nullable(),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'start_date must be in YYYY-MM-DD format').optional(),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'end_date must be in YYYY-MM-DD format').optional(),
+  status: z.enum(['PLANNING', 'ACTIVE', 'COMPLETED', 'CANCELLED']).optional(),
+}).refine(
+  (data) => {
+    if (data.start_date && data.end_date) {
+      return new Date(data.end_date) > new Date(data.start_date);
+    }
+    return true;
+  },
+  { message: 'end_date must be after start_date', path: ['end_date'] }
+);
+
+export type UpdateIterationRequest = z.infer<typeof UpdateIterationRequestSchema>;

@@ -114,6 +114,31 @@ CREATE TABLE organization_invites (
 );
 
 -- ---------------------------------------------------------------------------
+-- iterations
+-- ---------------------------------------------------------------------------
+CREATE TABLE iterations (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id      UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name            VARCHAR(255) NOT NULL,
+    goal            TEXT,
+    start_date      DATE NOT NULL,
+    end_date        DATE NOT NULL,
+    status          VARCHAR(20) NOT NULL DEFAULT 'PLANNING'
+                        CHECK (status IN ('PLANNING', 'ACTIVE', 'COMPLETED', 'CANCELLED')),
+    created_by      UUID NOT NULL REFERENCES users(id),
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_iteration_dates CHECK (end_date > start_date)
+);
+
+-- Enforce: only one ACTIVE iteration per project at any time
+CREATE UNIQUE INDEX idx_one_active_per_project
+    ON iterations(project_id)
+    WHERE status = 'ACTIVE';
+
+
+-- ---------------------------------------------------------------------------
 -- Indexes
 -- ---------------------------------------------------------------------------
 CREATE INDEX idx_users_email                    ON users(email);
@@ -125,6 +150,9 @@ CREATE INDEX idx_refresh_tokens_user_id         ON refresh_tokens(user_id);
 CREATE INDEX idx_org_invites_token              ON organization_invites(invite_token);
 CREATE INDEX idx_org_invites_email              ON organization_invites(email);
 CREATE INDEX idx_org_invites_org_id             ON organization_invites(organization_id);
+CREATE INDEX idx_iterations_project_id          ON iterations(project_id);
+CREATE INDEX idx_iterations_status              ON iterations(status);
+CREATE INDEX idx_iterations_created_by          ON iterations(created_by);
 
 -- ---------------------------------------------------------------------------
 -- Seed data  (development only — safe to remove in production)

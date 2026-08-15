@@ -10,6 +10,13 @@ export enum ProjectRole {
   MEMBER = 'MEMBER',
 }
 
+export enum IterationStatus {
+  PLANNING  = 'PLANNING',
+  ACTIVE    = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
 export interface JwtPayload {
   userId: string;
   organizationId: string;
