@@ -139,8 +139,22 @@ CREATE UNIQUE INDEX idx_one_active_per_project
 
 
 -- ---------------------------------------------------------------------------
+-- project_configurations
+-- ---------------------------------------------------------------------------
+CREATE TABLE project_configurations (
+    id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id            UUID UNIQUE NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    repo_url              TEXT NOT NULL,
+    personal_access_token TEXT NOT NULL,
+    created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- ---------------------------------------------------------------------------
 -- Indexes
 -- ---------------------------------------------------------------------------
+CREATE INDEX idx_project_configurations_project_id ON project_configurations(project_id);
 CREATE INDEX idx_users_email                    ON users(email);
 CREATE INDEX idx_users_organization_id          ON users(organization_id);
 CREATE INDEX idx_projects_organization_id       ON projects(organization_id);

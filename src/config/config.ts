@@ -20,6 +20,7 @@ export interface AuthSettings {
   corsOrigins: string[];
   refreshTokenSecret: string;
   refreshTokenTtlDays: number;
+  encryptionKey: string;
   // Email / SMTP
   smtpHost: string;
   smtpPort: number;
@@ -51,6 +52,7 @@ export function loadSettings(): AuthSettings {
     corsOrigins: corsOrigins,
     refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET || "dev-change-me-refresh-secret",
     refreshTokenTtlDays: parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || "7", 10),
+    encryptionKey: process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || "dev-change-me-secret-encryption-key-32-chars-long!",
     // Email
     smtpHost: process.env.SMTP_HOST || '',
     smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),

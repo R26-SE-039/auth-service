@@ -113,3 +113,10 @@ export const UpdateIterationRequestSchema = z.object({
 );
 
 export type UpdateIterationRequest = z.infer<typeof UpdateIterationRequestSchema>;
+
+export const SaveConfigurationRequestSchema = z.object({
+  repoUrl: z.string().min(1).max(2048),
+  personalAccessToken: z.string().min(1).max(4096),
+});
+
+export type SaveConfigurationRequest = z.infer<typeof SaveConfigurationRequestSchema>;
