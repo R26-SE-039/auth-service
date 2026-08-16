@@ -21,5 +21,11 @@ export const buildProjectConfigurationRouter = (): Router => {
     configController.upsertConfiguration.bind(configController)
   );
 
+  // POST   /projects/:projectId/configuration/test-jira — test Jira credentials live
+  router.post(
+    '/test-jira',
+    configController.testJiraConnection.bind(configController)
+  );
+
   return router;
 };

@@ -91,11 +91,23 @@ export class ProjectConfigurationService {
     }
 
     // Decrypt the personal access token
-    try {
-      config.personal_access_token = decrypt(config.personal_access_token, this.settings.encryptionKey);
-    } catch (err: any) {
-      console.error('[ProjectConfigurationService] Decryption failed:', err.message);
-      throw new Error('Failed to decrypt project credentials');
+    if (config.personal_access_token) {
+      try {
+        config.personal_access_token = decrypt(config.personal_access_token, this.settings.encryptionKey);
+      } catch (err: any) {
+        console.error('[ProjectConfigurationService] Git Decryption failed:', err.message);
+        throw new Error('Failed to decrypt project Git credentials');
+      }
+    }
+
+    // Decrypt the Jira API token
+    if (config.jira_api_token) {
+      try {
+        config.jira_api_token = decrypt(config.jira_api_token, this.settings.encryptionKey);
+      } catch (err: any) {
+        console.error('[ProjectConfigurationService] Jira Decryption failed:', err.message);
+        throw new Error('Failed to decrypt project Jira credentials');
+      }
     }
 
     return config;
@@ -106,19 +118,60 @@ export class ProjectConfigurationService {
     requesterId: string,
     organizationId: string,
     requesterRole: UserRole,
-    repoUrl: string,
-    personalAccessToken: string
+    repoUrl?: string,
+    personalAccessToken?: string,
+    jiraUrl?: string | null,
+    jiraEmail?: string | null,
+    jiraApiToken?: string | null,
+    jiraProjectKey?: string | null
   ): Promise<ProjectConfiguration> {
     await this.resolveProject(projectId, organizationId);
     await this.verifyWriteAccess(projectId, requesterId, requesterRole);
 
-    // Encrypt the personal access token before saving
-    const encryptedToken = encrypt(personalAccessToken, this.settings.encryptionKey);
+    const existing = await this.configRepository.findByProjectId(projectId);
+    if (existing) {
+      if (existing.personal_access_token) {
+        try {
+          existing.personal_access_token = decrypt(existing.personal_access_token, this.settings.encryptionKey);
+        } catch {}
+      }
+      if (existing.jira_api_token) {
+        try {
+          existing.jira_api_token = decrypt(existing.jira_api_token, this.settings.encryptionKey);
+        } catch {}
+      }
+    }
 
-    const config = await this.configRepository.upsert(projectId, repoUrl, encryptedToken);
+    const finalRepoUrl = repoUrl !== undefined ? repoUrl : (existing ? existing.repo_url : '');
+    const finalPatRaw = personalAccessToken !== undefined ? personalAccessToken : (existing ? existing.personal_access_token : '');
+    const finalJiraUrl = jiraUrl !== undefined ? jiraUrl : (existing ? existing.jira_url : null);
+    const finalJiraEmail = jiraEmail !== undefined ? jiraEmail : (existing ? existing.jira_email : null);
+    const finalJiraApiTokenRaw = jiraApiToken !== undefined ? jiraApiToken : (existing ? existing.jira_api_token : null);
+    const finalJiraProjectKey = jiraProjectKey !== undefined ? jiraProjectKey : (existing ? existing.jira_project_key : null);
 
-    // Decrypt the token in the returned object so the client gets the plaintext
-    config.personal_access_token = personalAccessToken;
+    // Encrypt Git Token if it's set
+    const encryptedPat = finalPatRaw ? encrypt(finalPatRaw, this.settings.encryptionKey) : '';
+
+    // Encrypt Jira Token if it's set
+    const encryptedJiraToken = finalJiraApiTokenRaw ? encrypt(finalJiraApiTokenRaw, this.settings.encryptionKey) : null;
+
+    const config = await this.configRepository.upsert(
+      projectId,
+      finalRepoUrl,
+      encryptedPat,
+      finalJiraUrl,
+      finalJiraEmail,
+      encryptedJiraToken,
+      finalJiraProjectKey
+    );
+
+    // Decrypt in response object
+    if (config.personal_access_token) {
+      config.personal_access_token = finalPatRaw;
+    }
+    if (config.jira_api_token) {
+      config.jira_api_token = finalJiraApiTokenRaw;
+    }
     return config;
   }
 }

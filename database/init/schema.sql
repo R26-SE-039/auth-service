@@ -146,6 +146,10 @@ CREATE TABLE project_configurations (
     project_id            UUID UNIQUE NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     repo_url              TEXT NOT NULL,
     personal_access_token TEXT NOT NULL,
+    jira_url              TEXT,
+    jira_email            TEXT,
+    jira_api_token        TEXT,
+    jira_project_key      TEXT,
     created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -167,40 +171,3 @@ CREATE INDEX idx_org_invites_org_id             ON organization_invites(organiza
 CREATE INDEX idx_iterations_project_id          ON iterations(project_id);
 CREATE INDEX idx_iterations_status              ON iterations(status);
 CREATE INDEX idx_iterations_created_by          ON iterations(created_by);
-
--- ---------------------------------------------------------------------------
--- Seed data  (development only — safe to remove in production)
--- Credentials: admin@acme.com / user@acme.com  →  password: password123
--- ---------------------------------------------------------------------------
-INSERT INTO organizations (id, company_name, domain) VALUES
-    ('11111111-1111-1111-1111-111111111111', 'Acme Corp', 'acme.com');
-
-INSERT INTO projects (id, organization_id, name, description, status) VALUES
-    ('22222222-2222-2222-2222-222222222222',
-     '11111111-1111-1111-1111-111111111111',
-     'Website Redesign', 'Redesigning the main corporate website', 'active');
-
--- password_hash = bcrypt("password123", rounds=10)
-INSERT INTO users (id, organization_id, email, password_hash, role) VALUES
-    ('33333333-3333-3333-3333-333333333333',
-     '11111111-1111-1111-1111-111111111111',
-     'admin@acme.com',
-     '$2b$10$7Z2v2aTETpZ8y1Q/n0H91utX.394Y5Z77yP1g/t4C.gH.hH41yD9C',
-     'ORGANIZATION_OWNER'),
-    ('44444444-4444-4444-4444-444444444444',
-     '11111111-1111-1111-1111-111111111111',
-     'user@acme.com',
-     '$2b$10$7Z2v2aTETpZ8y1Q/n0H91utX.394Y5Z77yP1g/t4C.gH.hH41yD9C',
-     'MEMBER');
-
-INSERT INTO project_members (project_id, user_id, project_role) VALUES
-    ('22222222-2222-2222-2222-222222222222',
-     '33333333-3333-3333-3333-333333333333', 'PROJECT_OWNER'),
-    ('22222222-2222-2222-2222-222222222222',
-     '44444444-4444-4444-4444-444444444444', 'MEMBER');
-
-INSERT INTO user_profiles (id, user_id, first_name, last_name, job_title) VALUES
-    ('55555555-5555-5555-5555-555555555555',
-     '33333333-3333-3333-3333-333333333333', 'Alice', 'Admin', 'Systems Administrator'),
-    ('66666666-6666-6666-6666-666666666666',
-     '44444444-4444-4444-4444-444444444444', 'Bob',   'User',  'Software Engineer');

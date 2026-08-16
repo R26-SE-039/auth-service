@@ -115,8 +115,12 @@ export const UpdateIterationRequestSchema = z.object({
 export type UpdateIterationRequest = z.infer<typeof UpdateIterationRequestSchema>;
 
 export const SaveConfigurationRequestSchema = z.object({
-  repoUrl: z.string().min(1).max(2048),
-  personalAccessToken: z.string().min(1).max(4096),
+  repoUrl: z.string().min(1).max(2048).optional(),
+  personalAccessToken: z.string().min(1).max(4096).optional(),
+  jiraUrl: z.string().url().max(2048).optional().nullable(),
+  jiraEmail: z.string().email().max(255).optional().nullable(),
+  jiraApiToken: z.string().max(4096).optional().nullable(),
+  jiraProjectKey: z.string().max(50).optional().nullable(),
 });
 
 export type SaveConfigurationRequest = z.infer<typeof SaveConfigurationRequestSchema>;
