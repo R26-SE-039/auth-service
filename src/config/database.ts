@@ -5,6 +5,7 @@ const settings = loadSettings();
 
 export const pool = new Pool({
   connectionString: settings.databaseUrl,
+  ssl: settings.databaseUrl.includes('neon.tech') ? { rejectUnauthorized: false } : false,
 });
 
 pool.on('error', (err, client) => {

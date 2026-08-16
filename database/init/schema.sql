@@ -185,12 +185,12 @@ INSERT INTO users (id, organization_id, email, password_hash, role) VALUES
     ('33333333-3333-3333-3333-333333333333',
      '11111111-1111-1111-1111-111111111111',
      'admin@acme.com',
-     '$2b$10$EP/257368g0G5z1X/M211OWQnXYKk43q.5iPcdvHh2N0aZ5w5fQd6',
+     '$2b$10$7Z2v2aTETpZ8y1Q/n0H91utX.394Y5Z77yP1g/t4C.gH.hH41yD9C',
      'ORGANIZATION_OWNER'),
     ('44444444-4444-4444-4444-444444444444',
      '11111111-1111-1111-1111-111111111111',
      'user@acme.com',
-     '$2b$10$EP/257368g0G5z1X/M211OWQnXYKk43q.5iPcdvHh2N0aZ5w5fQd6',
+     '$2b$10$7Z2v2aTETpZ8y1Q/n0H91utX.394Y5Z77yP1g/t4C.gH.hH41yD9C',
      'MEMBER');
 
 INSERT INTO project_members (project_id, user_id, project_role) VALUES
