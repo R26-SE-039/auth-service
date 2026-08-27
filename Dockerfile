@@ -10,8 +10,10 @@ ENV NODE_ENV=production
 # No package-lock.json in this repo (pnpm-managed), so use npm install. Dev
 # deps are required at runtime because "start" runs the TypeScript directly
 # through ts-node.
+# --include=dev because "start" runs via ts-node (a devDependency) and
+# NODE_ENV=production would otherwise make npm skip dev deps.
 COPY package.json ./
-RUN npm install && npm cache clean --force
+RUN npm install --include=dev && npm cache clean --force
 
 COPY tsconfig.json ./
 COPY src ./src
