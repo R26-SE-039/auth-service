@@ -1,2 +1,11 @@
-# Docker Compose file removed as all DB services have been migrated to Neon Cloud.
-# No local Docker containers are required to run auth-service.
+version: '3.8'
+
+services:
+  auth_app:
+    build: .
+    container_name: nextgenqa_auth_service
+    env_file:
+      - .env
+    ports:
+      - "3001:3001"
+    restart: unless-stopped

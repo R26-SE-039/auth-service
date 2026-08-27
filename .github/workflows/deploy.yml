@@ -1,0 +1,46 @@
+name: CI/CD - Auth Service
+
+on:
+  push:
+    branches:
+      - deployment
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Auth Service to AWS EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to AWS EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🚀 Starting Auth Service Deployment on EC2..."
+            
+            # Navigate to auth service directory
+            mkdir -p ~/NextGenQA/auth-service
+            cd ~/NextGenQA/auth-service
+            
+            # Fetch latest code
+            if [ -d ".git" ]; then
+              git fetch origin deployment || git fetch origin main
+              git reset --hard origin/deployment || git reset --hard origin/main
+            else
+              git clone https://github.com/R26-SE-039/auth-service.git .
+              git checkout deployment || git checkout main
+            fi
+            
+            # Build and restart docker container
+            docker-compose up -d --build
+            
+            # Clean unused images
+            docker image prune -f
+            
+            echo "✅ Auth Service Deployment Succeeded!"
