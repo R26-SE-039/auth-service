@@ -194,3 +194,5 @@ sequenceDiagram
         Controller-->>Client: 201 Created (JSON)
     end
 ```
+
+## Project Membership
